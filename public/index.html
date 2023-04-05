@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Меньченко</title>
+    <style>
+      .form {
+        width: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .button {
+        background-color: white;
+        color: black;
+        border: 2px solid cornflowerblue;
+        border-radius: 9px;
+        /* color: white; */
+        padding: 10px;
+        width: 130px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        transition-duration: 0.4s;
+        cursor: pointer;
+      }
+      .button:hover {
+        background-color: cornflowerblue;
+        color: white;
+      }
+      * {
+        margin: 0;
+        padding: 0px;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        color: cornflowerblue;
+      }
+      body {
+        background-color: antiquewhite;
+      }
+      .container {
+        padding: 15px;
+        /* display: flex;
+        flex-direction: column; */
+        color: cornflowerblue;
+      }
+      input {
+        width: 270px;
+        height: 30px;
+        border: none;
+        border-radius: 17px;
+        font-size: large;
+        padding: 7px;
+      }
+
+      .table {
+        width: 100%;
+        border: none;
+        margin-bottom: 20px;
+      }
+
+      .table thead th {
+        font-weight: bold;
+        text-align: left;
+        border: none;
+        padding: 10px 15px;
+        background: #d8d8d8;
+        font-size: 14px;
+      }
+      .table thead tr th:first-child {
+        border-radius: 8px 0 0 8px;
+      }
+      .table thead tr th:last-child {
+        border-radius: 0 8px 8px 0;
+      }
+      .table tbody td {
+        text-align: left;
+        border: none;
+        padding: 10px 15px;
+        font-size: 14px;
+        vertical-align: top;
+      }
+      /* .table tbody tr {
+        background: #d0c9eb;
+      } */
+
+      /* .table tbody tr:nth-child(even) {
+        background: #e20000;
+      } */
+  
+      .table tbody tr td:first-child {
+        border-radius: 17px 0 0 17px;
+        /* background: pink; */
+      }
+
+      .table tbody tr td:last-child {
+        border-radius: 0 17px 17px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Список пользователей</h2>
+      <div class="form">
+        <div class="fra">
+          <input type="hidden" id="userId" />
+          <p>
+            Имя:<br />
+            <input id="userName" />
+          </p>
+          <p>
+            Возраст:<br />
+            <input id="userAge" type="number" />
+          </p>
+          <span>
+            <button class="button" id="saveBtn">Сохранить</button>
+            <button class="button" id="resetBtn">Сбросить</button>
+          </span>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Имя</th>
+            <th>Возраст</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+      </table>
+    </div>
+    <script>
+      // Получение всех пользователей
+      async function getUsers() {
+        // отправляет запрос и получаем ответ
+        const response = await fetch("/api/users", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        // если запрос прошел нормально
+        if (response.ok === true) {
+          // получаем данные
+          const users = await response.json();
+          const rows = document.querySelector("tbody");
+          // добавляем полученные элементы в таблицу
+          users.forEach((user) => rows.append(row(user)));
+        }
+      }
+      // Получение одного пользователя
+      async function getUser(id) {
+        const response = await fetch(`/api/users/${id}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (response.ok === true) {
+          const user = await response.json();
+          document.getElementById("userId").value = user.id;
+          document.getElementById("userName").value = user.name;
+          document.getElementById("userAge").value = user.age;
+        } else {
+          // если произошла ошибка, получаем сообщение об ошибке
+          const error = await response.json();
+          console.log(error.message); // и выводим его на консоль
+        }
+      }
+      // Добавление пользователя
+      async function createUser(userName, userAge) {
+        const response = await fetch("api/users", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userName,
+            age: parseInt(userAge, 10),
+          }),
+        });
+        if (response.ok === true) {
+          const user = await response.json();
+          document.querySelector("tbody").append(row(user));
+        } else {
+          const error = await response.json();
+          console.log(error.message);
+        }
+      }
+      // Изменение пользователя
+      async function editUser(userId, userName, userAge) {
+        const response = await fetch("api/users", {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: userId,
+            name: userName,
+            age: parseInt(userAge, 10),
+          }),
+        });
+        if (response.ok === true) {
+          const user = await response.json();
+          document
+            .querySelector(`tr[data-rowid='${user.id}']`)
+            .replaceWith(row(user));
+        } else {
+          const error = await response.json();
+          console.log(error.message);
+        }
+      }
+      // Удаление пользователя
+      async function deleteUser(id) {
+        const response = await fetch(`/api/users/${id}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json" },
+        });
+        if (response.ok === true) {
+          const user = await response.json();
+          document.querySelector(`tr[data-rowid='${user.id}']`).remove();
+        } else {
+          const error = await response.json();
+          console.log(error.message);
+        }
+      }
+
+      // сброс данных формы после отправки
+      function reset() {
+        document.getElementById("userId").value =
+          document.getElementById("userName").value =
+          document.getElementById("userAge").value =
+            "";
+      }
+      // создание строки для таблицы
+      function row(user) {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-rowid", user.id);
+
+        const nameTd = document.createElement("td");
+        nameTd.append(user.name);
+        tr.append(nameTd);
+
+        const ageTd = document.createElement("td");
+        ageTd.append(user.age);
+        tr.append(ageTd);
+
+        const linksTd = document.createElement("td");
+
+        const editLink = document.createElement("button");
+        editLink.append("Изменить");
+        editLink.addEventListener("click", async () => await getUser(user.id));
+        linksTd.append(editLink);
+
+        const removeLink = document.createElement("button");
+        removeLink.append("Удалить");
+        removeLink.addEventListener(
+          "click",
+          async () => await deleteUser(user.id)
+        );
+
+        linksTd.append(removeLink);
+        tr.appendChild(linksTd);
+
+        return tr;
+      }
+      // сброс значений формы
+      document
+        .getElementById("resetBtn")
+        .addEventListener("click", () => reset());
+
+      // отправка формы
+      document.getElementById("saveBtn").addEventListener("click", async () => {
+        const id = document.getElementById("userId").value;
+        const name = document.getElementById("userName").value;
+        const age = document.getElementById("userAge").value;
+        if (id === "") await createUser(name, age);
+        else await editUser(id, name, age);
+        reset();
+      });
+
+      // загрузка пользователей
+      getUsers();
+    </script>
+  </body>
+</html>
